@@ -1,4 +1,3 @@
-# Leia-me mucho
+# Conflito em Jukeboxes Sociais
 
-Nossos planos são muito bons
-
+Dados do experimento [nesse artigo](http://ismir2015.uma.es/articles/212_Paper.pdf). 
