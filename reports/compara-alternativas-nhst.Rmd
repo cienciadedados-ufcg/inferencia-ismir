@@ -1,0 +1,78 @@
+---
+title: "Comparando mecanismos para jukebox sociais"
+output:
+    html_document:
+    df_print: paged
+theme: sandstone
+---
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+theme_set(theme_bw())
+
+knitr::opts_chunk$set(tidy = FALSE,
+                      fig.width = 6,
+                      fig.height = 5)
+
+```
+
+```{r read}
+dados = read_csv(here::here("data/satisfacoes.csv"), 
+                 col_types = "cdcc") 
+
+glimpse(dados)
+```
+
+
+```{r}
+comparacao1 = dados %>% 
+    filter(scenario %in% c("baseline", "like/dislike"))
+```
+
+```{r}
+theta_chapeu = {
+    satisfacoes = comparacao1 %>% 
+        group_by(scenario) %>% 
+        summarise(satisfacao = mean(satisfaction)) 
+    
+    like = satisfacoes %>% filter(scenario == "like/dislike") %>% pull(satisfacao)
+    baseline = satisfacoes %>% filter(scenario == "baseline") %>% pull(satisfacao)
+    
+    like - baseline
+}
+
+theta_chapeu
+```
+
+
+```{r}
+theta_emb = function(d){
+    satisfacoes = d %>% 
+        mutate(scenario_embaralhado = sample(scenario, n())) %>% 
+        group_by(scenario_embaralhado) %>% 
+        summarise(satisfacao = mean(satisfaction)) 
+    
+    like = satisfacoes %>% filter(scenario_embaralhado == "like/dislike") %>% pull(satisfacao)
+    baseline = satisfacoes %>% filter(scenario_embaralhado == "baseline") %>% pull(satisfacao)
+    
+    like - baseline
+}
+
+theta_emb(comparacao1)
+```
+
+```{r}
+diffs = replicate(4000, {theta_emb(dados)})
+
+tibble(diferenca = diffs) %>% 
+  ggplot(aes(x = diferenca)) + 
+  geom_histogram(binwidth = .2, fill = "white", color = "darkgreen") +
+    # geom_density(fill = "white", color = "darkgreen") + 
+  geom_vline(xintercept = theta_chapeu, 
+             color = "orange") + 
+    geom_vline(xintercept = -theta_chapeu, 
+             color = "orange")
+
+sum(abs(diffs) >= abs(theta_chapeu)) / length(diffs)
+```
+
