@@ -23,35 +23,53 @@ knitr::opts_chunk$set(tidy = FALSE,
 dados = read_csv(here::here("data/satisfacoes.csv"), 
                  col_types = "cdcc") 
 
+dados = dados %>% 
+    filter(scenario != "like/dislike")
+
 glimpse(dados)
 ```
 
+```{r}
+dados_wide = dados %>% 
+    pivot_wider(names_from = "scenario", values_from = satisfaction) 
+
+dados_wide = dados_wide %>% 
+    mutate(
+        combined_baseline = combined - baseline, 
+        updown_baseline = `up/downvoting` - baseline
+    ) 
+```
+
+
 
 ```{r}
-comparacao1 = dados %>% 
-    filter(scenario %in% c("baseline", "like/dislike"))
-
 theta <- function(d, i) {
-    agrupado = d %>% 
-        slice(i) %>% 
-        group_by(scenario) %>% 
-        summarise(media = mean(satisfaction))
-    b = agrupado %>% filter(scenario == "baseline") %>% pull(media)
-    l = agrupado %>% filter(scenario == "like/dislike") %>% pull(media)
-    l - b
+    d[i] %>% 
+        mean(na.rm = T)
 }
 
-theta(comparacao1, i = 1:NROW(comparacao1))
+theta(dados_wide$combined_baseline, 1:NROW(dados_wide))
+
+theta(dados_wide$updown_baseline, 1:NROW(dados_wide))
 ```
 
 ```{r}
-ci1 = boot(data = comparacao1,
-           statistic = theta,
-           R = 2000) %>%
+ci_combined = boot(data = dados_wide$combined_baseline,
+                   statistic = theta,
+                   R = 2000) %>%
     tidy(conf.level = .95,
          conf.method = "bca",
          conf.int = TRUE)
 
-ci1
+ci_combined
+
+ci_updown = boot(data = dados_wide$updown_baseline,
+                   statistic = theta,
+                   R = 2000) %>%
+    tidy(conf.level = .95,
+         conf.method = "bca",
+         conf.int = TRUE)
+
+ci_updown
 ```
 
